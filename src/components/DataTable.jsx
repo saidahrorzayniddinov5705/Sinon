@@ -14,6 +14,19 @@ function formatMoney(v) {
   return n.toLocaleString('uz-UZ') + " so'm"
 }
 
+// Matn ichidagi pul summalarini chiroyli qiladi: "10000.00" -> "10 000".
+// Faqat 2 xonali kasrli sonlar (pul) o'zgartiriladi — buyurtma raqami kabi
+// butun sonlarga tegilmaydi.
+export function humanizeAmounts(text) {
+  return String(text).replace(/\d+\.\d{2}(?!\d)/g, (m) => {
+    const n = Number(m)
+    if (isNaN(n)) return m
+    return Number.isInteger(n)
+      ? n.toLocaleString('uz-UZ')
+      : n.toLocaleString('uz-UZ', { minimumFractionDigits: 2 })
+  })
+}
+
 function Badge({ value }) {
   if (value === null || value === undefined || value === '') return <span className="muted">—</span>
   const text = String(value)
@@ -57,11 +70,33 @@ function Cell({ col, row }) {
     }
     default: {
       if (value === null || value === undefined || value === '') return <span className="muted">—</span>
-      if (typeof value === 'object') return <span className="muted">{JSON.stringify(value).slice(0, 40)}…</span>
-      const text = String(value)
+      // Ichki obyekt (FK) bo'lsa — o'qiladigan nom/ism ko'rsatamiz, xom JSON emas
+      if (Array.isArray(value)) {
+        const labels = value.map(objLabel).filter(Boolean)
+        return labels.length ? labels.join(', ') : <span className="muted">—</span>
+      }
+      if (typeof value === 'object') {
+        const lbl = objLabel(value)
+        return lbl !== null ? <span title={String(lbl)}>{truncate(String(lbl))}</span> : <span className="muted">—</span>
+      }
+      const text = humanizeAmounts(String(value))
       return text.length > 45 ? <span title={text}>{text.slice(0, 45)}…</span> : text
     }
   }
+}
+
+// Obyektdan o'qiladigan yorliqni tanlaydi (FK maydonlar uchun)
+function objLabel(o) {
+  if (o === null || o === undefined) return null
+  if (typeof o !== 'object') return String(o)
+  const v =
+    o.full_name ?? o.name ?? o.title ?? o.lab_name ?? o.username ?? o.role ??
+    o.label ?? o.order_id ?? o.patient_data?.full_name ?? o.phone ?? o.contact ?? o.id
+  return v === undefined ? null : v
+}
+
+function truncate(text, n = 45) {
+  return text.length > n ? text.slice(0, n) + '…' : text
 }
 
 export default function DataTable({ columns, rows, onView, onEdit }) {

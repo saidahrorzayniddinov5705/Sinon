@@ -1,38 +1,58 @@
 import { useState, useEffect, useCallback } from 'react'
 import client from './client'
 
-// Berilgan endpointdan GET qiladi. Paginated (results) yoki oddiy massiv/obyektni qaytaradi.
+// Xato xabarini backend formatidan ajratib oladi
+function extractError(e) {
+  const d = e.response?.data
+  const msg =
+    d?.message || // Sinon envelope: { success:false, message }
+    d?.detail || // DRF standart
+    (typeof d === 'string' ? d : null) ||
+    e.response?.statusText ||
+    e.message ||
+    "Noma'lum xatolik"
+  const text = typeof msg === 'string' ? msg : JSON.stringify(msg)
+  return `${e.response?.status || ''} ${text}`.trim()
+}
+
+// Berilgan endpointdan GET qiladi. Eski/keraksiz javoblarni e'tiborsiz qoldiradi
+// (race condition) va komponent yopilgach setState chaqirmaydi.
 export default function useFetch(endpoint, params) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [tick, setTick] = useState(0)
 
   const paramKey = JSON.stringify(params || {})
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    let ignore = false
     setLoading(true)
     setError(null)
-    try {
-      const res = await client.get(endpoint, { params })
-      setData(res.data)
-    } catch (e) {
-      const msg =
-        e.response?.data?.detail ||
-        e.response?.statusText ||
-        e.message ||
-        "Noma'lum xatolik"
-      setError(`${e.response?.status || ''} ${msg}`.trim())
-    } finally {
-      setLoading(false)
+
+    client
+      .get(endpoint, { params })
+      .then((res) => {
+        if (!ignore) setData(res.data)
+      })
+      .catch((e) => {
+        if (ignore) return
+        setError(extractError(e))
+        setData(null)
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false)
+      })
+
+    return () => {
+      ignore = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [endpoint, paramKey])
+  }, [endpoint, paramKey, tick])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  const reload = useCallback(() => setTick((t) => t + 1), [])
 
-  return { data, loading, error, reload: load }
+  return { data, loading, error, reload }
 }
 
 // Backend javob konvertini ochadi: { success, message, data } -> data

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, RotateCw } from 'lucide-react'
 import { findSection, detailMap } from '../config/sections'
-import { editForms } from '../config/editForms'
+import { getEditConfig } from '../config/editForms'
 import useFetch, { extractList } from '../api/useFetch'
 import DataTable from '../components/DataTable'
 import DetailModal from '../components/DetailModal'
@@ -48,15 +48,32 @@ function SectionContent({ section, view, tab, setTab }) {
   }, [page, query])
 
   const { data, loading, error, reload } = useFetch(view.endpoint, params)
-  const { rows, count, totalKnown } = extractList(data)
-  const totalPages = totalKnown ? Math.max(1, Math.ceil((count || 0) / pageSize)) : null
-  // Backend umumiy sonni bermasa: sahifa to'la bo'lsa "keyingi" bor deb hisoblaymiz
-  const hasNext = totalKnown ? page < totalPages : rows.length >= pageSize
+  const { rows: allRows, count, totalKnown } = extractList(data)
+
+  // Ba'zi endpointlar (masalan notif) `page` ni hurmat qilmay HAMMA yozuvni
+  // bir martada qaytaradi. Bunday holda sahifalashni o'zimiz (client-side) qilamiz.
+  const clientSide = !totalKnown && allRows.length > pageSize
+  const knownTotal = clientSide || totalKnown
+  const totalCount = clientSide ? allRows.length : count
+  const totalPages = knownTotal
+    ? Math.max(1, Math.ceil((totalCount || 0) / pageSize))
+    : null
+
+  // Client-side ma'lumotni ID bo'yicha kamayish tartibida (yangilari yuqorida) saralaymiz
+  const sortedAll = clientSide
+    ? [...allRows].sort((a, b) => (Number(b?.id) || 0) - (Number(a?.id) || 0))
+    : allRows
+  const rows = clientSide
+    ? sortedAll.slice((page - 1) * pageSize, page * pageSize)
+    : allRows
+
+  const hasNext = knownTotal ? page < totalPages : allRows.length >= pageSize
   const hasPrev = page > 1
   const showPagination = hasNext || hasPrev
 
   const detailTemplate = detailMap[view.endpoint]
-  const editFields = editForms[view.endpoint]
+  const editConfig = getEditConfig(view.endpoint)
+  const editFields = editConfig?.fields
 
   const rowId = (row) => row.id ?? row.device_id ?? row.pk
 
@@ -72,8 +89,12 @@ function SectionContent({ section, view, tab, setTab }) {
   const openEdit = (row) => {
     const id = rowId(row)
     if (id === undefined || id === null) return
+    // GET (prefill) — har doim standart detail/{id}/
+    // PATCH — maxsus manzil bo'lsa o'sha, aks holda detail/{id}/
+    const patchTpl = editConfig.patch || detailTemplate
     setEdit({
       endpoint: detailTemplate.replace('{id}', id),
+      patchEndpoint: patchTpl.replace('{id}', id),
       title: `${view.label} — tahrirlash #${id}`,
     })
   }
@@ -126,7 +147,7 @@ function SectionContent({ section, view, tab, setTab }) {
             <button type="submit" className="btn-mini">Izlash</button>
           </form>
           <span className="count-pill">
-            {count || 0} ta yozuv{totalKnown ? '' : ' (shu sahifa)'}
+            {totalCount || 0} ta yozuv{knownTotal ? '' : ' (shu sahifa)'}
           </span>
         </div>
 
@@ -157,7 +178,7 @@ function SectionContent({ section, view, tab, setTab }) {
             >
               <ChevronLeft size={16} /> Oldingi
             </button>
-            <span>{totalKnown ? `${page} / ${totalPages}` : `Sahifa ${page}`}</span>
+            <span>{knownTotal ? `${page} / ${totalPages}` : `Sahifa ${page}`}</span>
             <button
               className="btn-mini"
               disabled={!hasNext}
@@ -171,6 +192,7 @@ function SectionContent({ section, view, tab, setTab }) {
 
       {detail && (
         <DetailModal
+          key={detail.endpoint}
           endpoint={detail.endpoint}
           title={detail.title}
           onClose={() => setDetail(null)}
@@ -179,7 +201,9 @@ function SectionContent({ section, view, tab, setTab }) {
 
       {edit && (
         <EditModal
+          key={edit.endpoint}
           endpoint={edit.endpoint}
+          patchEndpoint={edit.patchEndpoint}
           fields={editFields}
           title={edit.title}
           onClose={() => setEdit(null)}

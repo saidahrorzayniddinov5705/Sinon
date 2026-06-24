@@ -114,7 +114,7 @@ export const sections = [
     views: [
       {
         label: 'Home — Banner',
-        endpoint: '/api/v1/main/patient/banner/list/',
+        endpoint: '/api/v1/super-admin/home/banner/',
         columns: [
           { key: 'id', label: 'ID' },
           { key: 'image', label: 'Rasm', type: 'image' },

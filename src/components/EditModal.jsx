@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import useFetch, { unwrapData } from '../api/useFetch'
-import { updateItem } from '../api/crud'
+import { patchItem } from '../api/crud'
 
 // datetime-local input uchun ISO sanani qisqartiradi
 function toLocalInput(v) {
@@ -23,9 +23,10 @@ function initValue(field, raw) {
   return v
 }
 
-export default function EditModal({ endpoint, fields, title, onClose, onSaved }) {
+export default function EditModal({ endpoint, patchEndpoint, fields, title, onClose, onSaved }) {
   const { data, loading, error } = useFetch(endpoint)
   const [form, setForm] = useState(null)
+  const [initial, setInitial] = useState(null) // boshlang'ich qiymatlar (o'zgarishni aniqlash uchun)
   const [saving, setSaving] = useState(false)
   const [saveErr, setSaveErr] = useState('')
 
@@ -36,6 +37,7 @@ export default function EditModal({ endpoint, fields, title, onClose, onSaved })
       const init = {}
       fields.forEach((f) => (init[f.name] = initValue(f, obj)))
       setForm(init)
+      setInitial(init)
     }
   }, [data, fields, form])
 
@@ -49,29 +51,46 @@ export default function EditModal({ endpoint, fields, title, onClose, onSaved })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setSaving(true)
     setSaveErr('')
-    // Payloadni tozalaymiz: bo'sh ixtiyoriy maydonlarni yubormaymiz
+
+    // PATCH — faqat O'ZGARGAN maydonlarni yuboramiz
     const payload = {}
     fields.forEach((f) => {
-      let val = form[f.name]
-      if (f.type === 'number' || f.type === 'decimal') {
-        if (val === '' || val === null) {
-          if (f.required) payload[f.name] = val
-          return
-        }
-        val = f.type === 'number' ? Number(val) : String(val)
-      }
+      const val = form[f.name]
+      if (val === initial[f.name]) return // o'zgarmagan — yubormaymiz
+
       if (f.type === 'bool') {
         payload[f.name] = !!val
         return
       }
-      if (val === '' && !f.required) return
+      if (f.type === 'number' || f.type === 'decimal') {
+        if (val === '' || val == null) {
+          payload[f.name] = null // tozalandi
+        } else {
+          payload[f.name] = f.type === 'number' ? Number(val) : String(val)
+        }
+        return
+      }
+      if (f.type === 'datetime') {
+        if (val === '' || val == null) {
+          payload[f.name] = null
+        } else {
+          const d = new Date(val)
+          payload[f.name] = isNaN(d) ? val : d.toISOString()
+        }
+        return
+      }
       payload[f.name] = val
     })
 
+    if (Object.keys(payload).length === 0) {
+      setSaveErr("Hech qanday o'zgartirish kiritilmadi")
+      return
+    }
+
+    setSaving(true)
     try {
-      await updateItem(endpoint, payload)
+      await patchItem(patchEndpoint || endpoint, payload)
       onSaved?.()
       onClose()
     } catch (err) {
@@ -104,6 +123,7 @@ export default function EditModal({ endpoint, fields, title, onClose, onSaved })
 
           {!loading && !error && form && (
             <form className="edit-form" onSubmit={handleSubmit}>
+              <p className="form-note">Faqat o'zgartirilgan maydonlar saqlanadi (PATCH).</p>
               {fields.map((f) => (
                 <div className="form-field" key={f.name}>
                   <label>

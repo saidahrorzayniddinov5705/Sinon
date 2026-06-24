@@ -199,4 +199,68 @@ export const editForms = {
     { name: 'version', label: 'Versiya', type: 'text' },
     { name: 'is_active', label: 'Aktiv', type: 'bool' },
   ],
+
+  // --- Maxsus PATCH endpointlari (/update/, /status/) ---
+  // Bu bo'limlarda standart PUT yo'q, faqat PATCH bor. `patch` — maxsus PATCH manzili.
+  '/api/v1/super-admin/users/list/': {
+    patch: '/api/v1/super-admin/users/detail/{id}/update/',
+    fields: [
+      { name: 'full_name', label: 'F.I.O', type: 'text' },
+      { name: 'contact', label: 'Kontakt', type: 'text' },
+      { name: 'passport', label: 'Passport', type: 'text' },
+      { name: 'birth_date', label: "Tug'ilgan sana", type: 'date' },
+      { name: 'gender', label: 'Jinsi', type: 'select', options: ['erkak', 'ayol'] },
+      { name: 'active_role', label: 'Aktiv rol', type: 'text' },
+      { name: 'status', label: 'Holat', type: 'bool' },
+      { name: 'is_active', label: 'Aktiv', type: 'bool' },
+      { name: 'is_staff', label: 'Staff', type: 'bool' },
+    ],
+  },
+  '/api/v1/super-admin/doctor-application/list/': {
+    patch: '/api/v1/super-admin/doctor-application/detail/{id}/status/',
+    fields: [
+      { name: 'status', label: 'Holat', type: 'select', required: true, options: ['pending', 'approved', 'cancelled', 'finished'] },
+    ],
+  },
+  '/api/v1/super-admin/medical-service/list/': {
+    patch: '/api/v1/super-admin/medical-service/detail/{id}/update/',
+    fields: [
+      { name: 'name', label: 'Nomi', type: 'text' },
+      { name: 'description', label: 'Tavsif', type: 'textarea' },
+      { name: 'min_price', label: 'Min narx', type: 'decimal' },
+      { name: 'max_price', label: 'Max narx', type: 'decimal' },
+      { name: 'units', label: 'Birlik', type: 'number' },
+      { name: 'code', label: 'Kod', type: 'text' },
+      { name: 'package_code', label: 'Paket kodi', type: 'text' },
+      { name: 'vat_percent', label: 'QQS (%)', type: 'number' },
+      { name: 'status', label: 'Holat', type: 'bool' },
+    ],
+  },
+  '/api/v1/super-admin/profile/doctor-profiles/': {
+    patch: '/api/v1/super-admin/profile/doctor-profiles/{id}/update/',
+    fields: [
+      { name: 'username', label: 'Username', type: 'text' },
+      { name: 'specialization', label: 'Mutaxassislik', type: 'text' },
+      { name: 'experience_year', label: 'Tajriba (yil)', type: 'number' },
+      { name: 'bio', label: 'Bio', type: 'textarea' },
+      { name: 'is_private', label: 'Yopiq', type: 'bool' },
+      { name: 'status', label: 'Holat', type: 'bool' },
+    ],
+  },
+  '/api/v1/super-admin/profile/patient-profiles/': {
+    patch: '/api/v1/super-admin/profile/patient-profiles/{id}/update/',
+    fields: [
+      { name: 'status', label: 'Holat', type: 'bool' },
+    ],
+  },
+}
+
+// Forma konfiguratsiyasini normallashtiradi.
+// Array bo'lsa — PATCH standart detail/{id}/ manziliga ketadi.
+// Obyekt bo'lsa — maxsus `patch` manzili ishlatiladi.
+export function getEditConfig(listEndpoint) {
+  const entry = editForms[listEndpoint]
+  if (!entry) return null
+  if (Array.isArray(entry)) return { fields: entry, patch: null }
+  return { fields: entry.fields, patch: entry.patch || null }
 }
