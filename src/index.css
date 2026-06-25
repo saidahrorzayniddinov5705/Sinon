@@ -582,17 +582,34 @@ input { font-family: inherit; }
 }
 .modal-head h3 { font-size: 16px; font-weight: 700; }
 .modal-body { padding: 18px 22px; overflow-y: auto; }
-.detail-grid { display: flex; flex-direction: column; }
-.detail-row {
+.detail-grid {
   display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 14px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
 }
-.detail-row:last-child { border-bottom: none; }
-.detail-key { color: var(--muted); font-weight: 600; font-size: 13px; word-break: break-word; }
-.detail-val { font-size: 14px; word-break: break-word; }
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.detail-row:hover { border-color: var(--green); box-shadow: 0 2px 10px rgba(34, 197, 94, 0.08); }
+[data-theme='dark'] .detail-row { background: #1b2740; }
+.detail-key {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  word-break: break-word;
+}
+.detail-val { font-size: 14px; font-weight: 500; word-break: break-word; }
+/* Uzun maydon (matn/JSON/rasm) — butun qatorni egallaydi */
+.detail-row.wide { grid-column: 1 / -1; }
 .detail-img { max-width: 160px; max-height: 120px; border-radius: 10px; }
 .detail-link { color: var(--green); text-decoration: underline; word-break: break-all; }
 .detail-json {
