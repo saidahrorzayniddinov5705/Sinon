@@ -501,6 +501,21 @@ export const detailMap = {
   '/api/v1/super-admin/address/list-create/': '/api/v1/super-admin/address/detail/{id}/',
 }
 
+// DELETE manzili. Ko'p bo'limlarda DELETE standart detail/{id}/ da,
+// lekin 5 ta bo'limda maxsus /delete/ suffiksi bilan.
+const deleteOverrides = {
+  '/api/v1/super-admin/users/list/': '/api/v1/super-admin/users/detail/{id}/delete/',
+  '/api/v1/super-admin/doctor-application/list/': '/api/v1/super-admin/doctor-application/detail/{id}/delete/',
+  '/api/v1/super-admin/medical-service/list/': '/api/v1/super-admin/medical-service/detail/{id}/delete/',
+  '/api/v1/super-admin/profile/doctor-profiles/': '/api/v1/super-admin/profile/doctor-profiles/{id}/delete/',
+  '/api/v1/super-admin/profile/patient-profiles/': '/api/v1/super-admin/profile/patient-profiles/{id}/delete/',
+}
+
+// Berilgan list endpoint uchun DELETE manzili shabloni ({id} bilan)
+export function getDeleteTemplate(listEndpoint) {
+  return deleteOverrides[listEndpoint] || detailMap[listEndpoint] || null
+}
+
 export function findSection(key) {
   return sections.find((s) => s.key === key)
 }

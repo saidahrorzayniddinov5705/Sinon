@@ -99,11 +99,11 @@ function truncate(text, n = 45) {
   return text.length > n ? text.slice(0, n) + '…' : text
 }
 
-export default function DataTable({ columns, rows, onView, onEdit }) {
+export default function DataTable({ columns, rows, onView, onEdit, onDelete }) {
   if (!rows || rows.length === 0) {
     return <div className="empty">Ma'lumot topilmadi</div>
   }
-  const hasActions = onView || onEdit
+  const hasActions = onView || onEdit || onDelete
   return (
     <div className="table-wrap">
       <table className="data-table">
@@ -134,6 +134,11 @@ export default function DataTable({ columns, rows, onView, onEdit }) {
                     {onEdit && (
                       <button className="btn-mini edit" onClick={() => onEdit(row)}>
                         Tahrirlash
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button className="btn-mini delete" onClick={() => onDelete(row)}>
+                        O'chirish
                       </button>
                     )}
                   </div>

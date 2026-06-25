@@ -55,18 +55,21 @@ export default function useFetch(endpoint, params) {
   return { data, loading, error, reload }
 }
 
-// Backend javob konvertini ochadi: { success, message, data } -> data
+// Backend javob konvertini ochadi: { success, message, data } -> data.
+// Ba'zi endpointlar IKKI QAVAT envelope qaytaradi
+// ({success, data:{success, message, data:[...]}}), shuning uchun ichma-ich ochamiz.
 export function unwrapData(raw) {
-  if (
-    raw &&
-    typeof raw === 'object' &&
-    !Array.isArray(raw) &&
-    'data' in raw &&
-    ('success' in raw || 'message' in raw || 'code' in raw)
+  let cur = raw
+  while (
+    cur &&
+    typeof cur === 'object' &&
+    !Array.isArray(cur) &&
+    'data' in cur &&
+    ('success' in cur || 'message' in cur || 'code' in cur)
   ) {
-    return raw.data
+    cur = cur.data
   }
-  return raw
+  return cur
 }
 
 // Javobdan ro'yxat (rows) va umumiy sonni ajratib oladi.

@@ -216,10 +216,36 @@ export const editForms = {
       { name: 'is_staff', label: 'Staff', type: 'bool' },
     ],
   },
+  // Doctor Application — IKKI PATCH endpoint: /status/ (holat) va /update/ (tafsilot+fayllar).
+  // Bitta forma, har maydon o'z endpointiga PATCH bo'ladi.
   '/api/v1/super-admin/doctor-application/list/': {
-    patch: '/api/v1/super-admin/doctor-application/detail/{id}/status/',
-    fields: [
-      { name: 'status', label: 'Holat', type: 'select', required: true, options: ['pending', 'approved', 'cancelled', 'finished'] },
+    targets: [
+      {
+        patch: '/api/v1/super-admin/doctor-application/detail/{id}/status/',
+        fields: [
+          { name: 'status', label: 'Holat', type: 'select', options: ['pending', 'approved', 'cancelled', 'finished'] },
+        ],
+      },
+      {
+        patch: '/api/v1/super-admin/doctor-application/detail/{id}/update/',
+        fields: [
+          { name: 'full_name', label: 'F.I.O', type: 'text' },
+          { name: 'phone_number', label: 'Telefon', type: 'text' },
+          { name: 'region', label: 'Viloyat', type: 'text' },
+          { name: 'district', label: 'Tuman', type: 'text' },
+          { name: 'address', label: 'Manzil', type: 'text' },
+          { name: 'birth_date', label: "Tug'ilgan sana", type: 'date' },
+          { name: 'gender', label: 'Jinsi', type: 'select', options: ['erkak', 'ayol'] },
+          { name: 'passport', label: 'Passport', type: 'text' },
+          { name: 'specialization', label: 'Mutaxassislik', type: 'text' },
+          { name: 'experience_year', label: 'Tajriba (yil)', type: 'number' },
+          { name: 'bio', label: 'Bio', type: 'textarea' },
+          { name: 'image', label: 'Rasm', type: 'file' },
+          { name: 'passport_image', label: 'Passport rasmi', type: 'file' },
+          { name: 'passport_image2', label: 'Passport rasmi (2)', type: 'file' },
+          { name: 'diplom_images', label: 'Diplom rasmlari', type: 'files' },
+        ],
+      },
     ],
   },
   '/api/v1/super-admin/medical-service/list/': {
@@ -255,12 +281,15 @@ export const editForms = {
   },
 }
 
-// Forma konfiguratsiyasini normallashtiradi.
-// Array bo'lsa — PATCH standart detail/{id}/ manziliga ketadi.
-// Obyekt bo'lsa — maxsus `patch` manzili ishlatiladi.
+// Forma konfiguratsiyasini bir xil `targets` ko'rinishiga keltiradi.
+//  - Array            -> bitta nishon, PATCH standart detail/{id}/ manziliga
+//  - { patch, fields } -> bitta nishon, maxsus PATCH manzili
+//  - { targets: [...] } -> bir nechta nishon (har biri o'z PATCH manziliga)
+// patch=null bo'lsa, ListPage uni detail/{id}/ bilan to'ldiradi.
 export function getEditConfig(listEndpoint) {
   const entry = editForms[listEndpoint]
   if (!entry) return null
-  if (Array.isArray(entry)) return { fields: entry, patch: null }
-  return { fields: entry.fields, patch: entry.patch || null }
+  if (Array.isArray(entry)) return { targets: [{ patch: null, fields: entry }] }
+  if (entry.targets) return { targets: entry.targets }
+  return { targets: [{ patch: entry.patch || null, fields: entry.fields }] }
 }

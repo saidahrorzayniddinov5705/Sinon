@@ -1,12 +1,16 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, RotateCw } from 'lucide-react'
-import { findSection, detailMap } from '../config/sections'
+import { ChevronLeft, ChevronRight, RotateCw, Plus } from 'lucide-react'
+import { findSection, detailMap, getDeleteTemplate } from '../config/sections'
 import { getEditConfig } from '../config/editForms'
+import { getCreateConfig } from '../config/createForms'
+import { deleteItem } from '../api/crud'
 import useFetch, { extractList } from '../api/useFetch'
 import DataTable from '../components/DataTable'
 import DetailModal from '../components/DetailModal'
 import EditModal from '../components/EditModal'
+import CreateModal from '../components/CreateModal'
+import ConfirmModal from '../components/ConfirmModal'
 
 export default function ListPage() {
   const { key } = useParams()
@@ -39,6 +43,8 @@ function SectionContent({ section, view, tab, setTab }) {
   const [query, setQuery] = useState('')
   const [detail, setDetail] = useState(null) // { endpoint, title }
   const [edit, setEdit] = useState(null) // { endpoint, title }
+  const [del, setDel] = useState(null) // { endpoint, title }
+  const [creating, setCreating] = useState(false)
   const pageSize = 20
 
   const params = useMemo(() => {
@@ -51,21 +57,29 @@ function SectionContent({ section, view, tab, setTab }) {
   const { rows: allRows, count, totalKnown } = extractList(data)
 
   // Ba'zi endpointlar (masalan notif) `page` ni hurmat qilmay HAMMA yozuvni
-  // bir martada qaytaradi. Bunday holda sahifalashni o'zimiz (client-side) qilamiz.
+  // bir martada qaytaradi. Bunday holda sahifalash VA qidiruvni o'zimiz qilamiz.
   const clientSide = !totalKnown && allRows.length > pageSize
+
+  // Client-side: ID bo'yicha saralash + (qidiruv bo'lsa) matn bo'yicha filtrlash
+  let pool = allRows
+  if (clientSide) {
+    pool = [...allRows].sort((a, b) => (Number(b?.id) || 0) - (Number(a?.id) || 0))
+    if (query) {
+      const q = query.toLowerCase()
+      pool = pool.filter((r) =>
+        Object.values(r).some(
+          (v) => (typeof v === 'string' || typeof v === 'number') && String(v).toLowerCase().includes(q)
+        )
+      )
+    }
+  }
+
   const knownTotal = clientSide || totalKnown
-  const totalCount = clientSide ? allRows.length : count
+  const totalCount = clientSide ? pool.length : count
   const totalPages = knownTotal
     ? Math.max(1, Math.ceil((totalCount || 0) / pageSize))
     : null
-
-  // Client-side ma'lumotni ID bo'yicha kamayish tartibida (yangilari yuqorida) saralaymiz
-  const sortedAll = clientSide
-    ? [...allRows].sort((a, b) => (Number(b?.id) || 0) - (Number(a?.id) || 0))
-    : allRows
-  const rows = clientSide
-    ? sortedAll.slice((page - 1) * pageSize, page * pageSize)
-    : allRows
+  const rows = clientSide ? pool.slice((page - 1) * pageSize, page * pageSize) : allRows
 
   const hasNext = knownTotal ? page < totalPages : allRows.length >= pageSize
   const hasPrev = page > 1
@@ -73,7 +87,9 @@ function SectionContent({ section, view, tab, setTab }) {
 
   const detailTemplate = detailMap[view.endpoint]
   const editConfig = getEditConfig(view.endpoint)
-  const editFields = editConfig?.fields
+  const hasEdit = !!editConfig
+  const deleteTemplate = getDeleteTemplate(view.endpoint)
+  const createConfig = getCreateConfig(view.endpoint)
 
   const rowId = (row) => row.id ?? row.device_id ?? row.pk
 
@@ -89,13 +105,25 @@ function SectionContent({ section, view, tab, setTab }) {
   const openEdit = (row) => {
     const id = rowId(row)
     if (id === undefined || id === null) return
-    // GET (prefill) — har doim standart detail/{id}/
-    // PATCH — maxsus manzil bo'lsa o'sha, aks holda detail/{id}/
-    const patchTpl = editConfig.patch || detailTemplate
+    // Har bir nishon manzilini {id} bilan to'ldiramiz.
+    // patch=null bo'lsa — standart detail/{id}/ ishlatiladi.
+    const targets = editConfig.targets.map((t) => ({
+      patch: (t.patch || detailTemplate).replace('{id}', id),
+      fields: t.fields,
+    }))
     setEdit({
-      endpoint: detailTemplate.replace('{id}', id),
-      patchEndpoint: patchTpl.replace('{id}', id),
+      endpoint: detailTemplate.replace('{id}', id), // GET prefill
+      targets,
       title: `${view.label} — tahrirlash #${id}`,
+    })
+  }
+
+  const openDelete = (row) => {
+    const id = rowId(row)
+    if (id === undefined || id === null) return
+    setDel({
+      endpoint: deleteTemplate.replace('{id}', id),
+      title: `${view.label} #${id} — o'chirish`,
     })
   }
 
@@ -146,9 +174,16 @@ function SectionContent({ section, view, tab, setTab }) {
             />
             <button type="submit" className="btn-mini">Izlash</button>
           </form>
-          <span className="count-pill">
-            {totalCount || 0} ta yozuv{knownTotal ? '' : ' (shu sahifa)'}
-          </span>
+          <div className="toolbar-right">
+            <span className="count-pill">
+              {totalCount || 0} ta yozuv{knownTotal ? '' : ' (shu sahifa)'}
+            </span>
+            {createConfig && (
+              <button className="btn-add" onClick={() => setCreating(true)}>
+                <Plus size={16} /> Qo'shish
+              </button>
+            )}
+          </div>
         </div>
 
         {loading && <div className="empty">Yuklanmoqda...</div>}
@@ -165,7 +200,8 @@ function SectionContent({ section, view, tab, setTab }) {
             columns={view.columns}
             rows={rows}
             onView={detailTemplate ? openDetail : undefined}
-            onEdit={detailTemplate && editFields ? openEdit : undefined}
+            onEdit={detailTemplate && hasEdit ? openEdit : undefined}
+            onDelete={deleteTemplate ? openDelete : undefined}
           />
         )}
 
@@ -203,11 +239,32 @@ function SectionContent({ section, view, tab, setTab }) {
         <EditModal
           key={edit.endpoint}
           endpoint={edit.endpoint}
-          patchEndpoint={edit.patchEndpoint}
-          fields={editFields}
+          targets={edit.targets}
           title={edit.title}
           onClose={() => setEdit(null)}
           onSaved={reload}
+        />
+      )}
+
+      {creating && createConfig && (
+        <CreateModal
+          url={createConfig.url}
+          fields={createConfig.fields}
+          title={`${section.title} — yangi qo'shish`}
+          onClose={() => setCreating(false)}
+          onSaved={reload}
+        />
+      )}
+
+      {del && (
+        <ConfirmModal
+          title={del.title}
+          message="Bu yozuvni o'chirmoqchimisiz? Bu amalni qaytarib bo'lmaydi."
+          onConfirm={async () => {
+            await deleteItem(del.endpoint)
+            reload()
+          }}
+          onClose={() => setDel(null)}
         />
       )}
     </div>

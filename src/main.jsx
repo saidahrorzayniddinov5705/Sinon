@@ -8,7 +8,7 @@ import './index.css'
 // Eslatma: React.StrictMode olib tashlandi — u dev rejimida useEffect'ni
 // ikki marta chaqirib, har so'rovni 2 marta yuborardi.
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
+  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
     <ThemeProvider>
       <AuthProvider>
         <App />

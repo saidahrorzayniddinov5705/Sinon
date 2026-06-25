@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { X } from 'lucide-react'
 import useFetch, { unwrapData } from '../api/useFetch'
 import { patchItem } from '../api/crud'
@@ -14,6 +14,7 @@ function toLocalInput(v) {
 
 // Maydon qiymatini forma uchun tayyorlaydi
 function initValue(field, raw) {
+  if (field.type === 'file' || field.type === 'files') return null // fayllarni oldindan to'ldirib bo'lmaydi
   const v = raw?.[field.name]
   if (field.type === 'bool') return !!v
   if (field.type === 'datetime') return toLocalInput(v)
@@ -23,23 +24,39 @@ function initValue(field, raw) {
   return v
 }
 
-export default function EditModal({ endpoint, patchEndpoint, fields, title, onClose, onSaved }) {
+// Maydon qiymatini API uchun konvertatsiya qiladi
+function convertVal(f, val) {
+  if (f.type === 'bool') return !!val
+  if (f.type === 'number') return val === '' || val == null ? null : Number(val)
+  if (f.type === 'decimal') return val === '' || val == null ? null : String(val)
+  if (f.type === 'datetime') {
+    if (val === '' || val == null) return null
+    const d = new Date(val)
+    return isNaN(d) ? val : d.toISOString()
+  }
+  return val // text / select / date / textarea
+}
+
+export default function EditModal({ endpoint, targets, title, onClose, onSaved }) {
   const { data, loading, error } = useFetch(endpoint)
   const [form, setForm] = useState(null)
-  const [initial, setInitial] = useState(null) // boshlang'ich qiymatlar (o'zgarishni aniqlash uchun)
+  const [initial, setInitial] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveErr, setSaveErr] = useState('')
+
+  // Barcha nishonlardagi maydonlarni bitta ro'yxatga yig'amiz
+  const allFields = useMemo(() => targets.flatMap((t) => t.fields), [targets])
 
   // Detail kelganda formani to'ldiramiz (envelope ochiladi)
   useEffect(() => {
     if (data && !form) {
       const obj = unwrapData(data)
       const init = {}
-      fields.forEach((f) => (init[f.name] = initValue(f, obj)))
+      allFields.forEach((f) => (init[f.name] = initValue(f, obj)))
       setForm(init)
       setInitial(init)
     }
-  }, [data, fields, form])
+  }, [data, allFields, form])
 
   useEffect(() => {
     const h = (e) => e.key === 'Escape' && onClose()
@@ -49,48 +66,58 @@ export default function EditModal({ endpoint, patchEndpoint, fields, title, onCl
 
   const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }))
 
+  // Bitta nishon uchun yuboriladigan ma'lumotni quradi (faqat o'zgargan + tanlangan fayllar)
+  function buildPayload(target) {
+    const changed = {}
+    const fileEntries = []
+    target.fields.forEach((f) => {
+      const val = form[f.name]
+      if (f.type === 'file') {
+        if (val instanceof File) fileEntries.push([f.name, [val]])
+        return
+      }
+      if (f.type === 'files') {
+        if (val && val.length) fileEntries.push([f.name, Array.from(val)])
+        return
+      }
+      if (val === initial[f.name]) return // o'zgarmagan
+      changed[f.name] = convertVal(f, val)
+    })
+
+    if (!Object.keys(changed).length && !fileEntries.length) return null
+
+    if (fileEntries.length) {
+      // Fayl bor — multipart/form-data
+      const fd = new FormData()
+      Object.entries(changed).forEach(([k, v]) => {
+        if (v === null) fd.append(k, '')
+        else if (typeof v === 'boolean') fd.append(k, String(v))
+        else fd.append(k, v)
+      })
+      fileEntries.forEach(([k, files]) => files.forEach((file) => fd.append(k, file)))
+      return fd
+    }
+    return changed // oddiy JSON
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaveErr('')
 
-    // PATCH — faqat O'ZGARGAN maydonlarni yuboramiz
-    const payload = {}
-    fields.forEach((f) => {
-      const val = form[f.name]
-      if (val === initial[f.name]) return // o'zgarmagan — yubormaymiz
+    const jobs = targets
+      .map((t) => ({ patch: t.patch, payload: buildPayload(t) }))
+      .filter((j) => j.payload !== null)
 
-      if (f.type === 'bool') {
-        payload[f.name] = !!val
-        return
-      }
-      if (f.type === 'number' || f.type === 'decimal') {
-        if (val === '' || val == null) {
-          payload[f.name] = null // tozalandi
-        } else {
-          payload[f.name] = f.type === 'number' ? Number(val) : String(val)
-        }
-        return
-      }
-      if (f.type === 'datetime') {
-        if (val === '' || val == null) {
-          payload[f.name] = null
-        } else {
-          const d = new Date(val)
-          payload[f.name] = isNaN(d) ? val : d.toISOString()
-        }
-        return
-      }
-      payload[f.name] = val
-    })
-
-    if (Object.keys(payload).length === 0) {
+    if (!jobs.length) {
       setSaveErr("Hech qanday o'zgartirish kiritilmadi")
       return
     }
 
     setSaving(true)
     try {
-      await patchItem(patchEndpoint || endpoint, payload)
+      for (const job of jobs) {
+        await patchItem(job.patch, job.payload)
+      }
       onSaved?.()
       onClose()
     } catch (err) {
@@ -98,9 +125,7 @@ export default function EditModal({ endpoint, patchEndpoint, fields, title, onCl
       setSaveErr(
         typeof d === 'string'
           ? d
-          : d
-          ? JSON.stringify(d)
-          : err.message || 'Saqlashda xatolik'
+          : d?.message || (d ? JSON.stringify(d) : err.message || 'Saqlashda xatolik')
       )
     } finally {
       setSaving(false)
@@ -123,8 +148,8 @@ export default function EditModal({ endpoint, patchEndpoint, fields, title, onCl
 
           {!loading && !error && form && (
             <form className="edit-form" onSubmit={handleSubmit}>
-              <p className="form-note">Faqat o'zgartirilgan maydonlar saqlanadi (PATCH).</p>
-              {fields.map((f) => (
+              <p className="form-note">Faqat o'zgartirgan maydonlaringiz saqlanadi.</p>
+              {allFields.map((f) => (
                 <div className="form-field" key={f.name}>
                   <label>
                     {f.label}
@@ -157,6 +182,19 @@ export default function EditModal({ endpoint, patchEndpoint, fields, title, onCl
                       value={form[f.name] ?? ''}
                       onChange={(e) => setField(f.name, e.target.value)}
                       required={f.required}
+                    />
+                  ) : f.type === 'file' ? (
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setField(f.name, e.target.files[0] || null)}
+                    />
+                  ) : f.type === 'files' ? (
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => setField(f.name, e.target.files)}
                     />
                   ) : (
                     <input
