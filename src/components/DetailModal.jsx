@@ -113,7 +113,7 @@ function objLabel(o) {
   return null
 }
 
-function FieldList({ obj }) {
+export function FieldList({ obj }) {
   const entries = obj && typeof obj === 'object' && !Array.isArray(obj) ? Object.entries(obj) : [['data', obj]]
   return (
     <div className="detail-grid">

@@ -1,4 +1,4 @@
-import { Menu, Search, LogOut } from 'lucide-react'
+import { Menu, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
@@ -16,11 +16,6 @@ export default function Topbar({ onMenuClick }) {
       <button className="icon-btn mobile-only" onClick={onMenuClick} aria-label="Menyu">
         <Menu size={22} />
       </button>
-
-      <div className="search-box">
-        <Search size={16} />
-        <input placeholder="Qidirish..." />
-      </div>
 
       <div className="topbar-right">
         <div className="user">

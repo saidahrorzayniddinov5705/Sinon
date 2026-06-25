@@ -1,16 +1,13 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, RotateCw, Plus } from 'lucide-react'
-import { findSection, detailMap, getDeleteTemplate } from '../config/sections'
-import { getEditConfig } from '../config/editForms'
+import { useParams, useNavigate } from 'react-router-dom'
+import { ChevronLeft, ChevronRight, RotateCw, Plus, SlidersHorizontal } from 'lucide-react'
+import { findSection, getDeleteTemplate } from '../config/sections'
 import { getCreateConfig } from '../config/createForms'
-import { deleteItem } from '../api/crud'
+import { getFilters } from '../config/filters'
 import useFetch, { extractList } from '../api/useFetch'
 import DataTable from '../components/DataTable'
-import DetailModal from '../components/DetailModal'
-import EditModal from '../components/EditModal'
 import CreateModal from '../components/CreateModal'
-import ConfirmModal from '../components/ConfirmModal'
+import FilterPanel from '../components/FilterPanel'
 
 export default function ListPage() {
   const { key } = useParams()
@@ -38,99 +35,57 @@ export default function ListPage() {
 }
 
 function SectionContent({ section, view, tab, setTab }) {
+  const navigate = useNavigate()
   const [page, setPage] = useState(1)
-  const [search, setSearch] = useState('')
-  const [query, setQuery] = useState('')
-  const [detail, setDetail] = useState(null) // { endpoint, title }
-  const [edit, setEdit] = useState(null) // { endpoint, title }
-  const [del, setDel] = useState(null) // { endpoint, title }
   const [creating, setCreating] = useState(false)
+  const [filterParams, setFilterParams] = useState({}) // qo'llangan filtr query params
+  const filterDefs = getFilters(view.endpoint)
+  const [filterOpen, setFilterOpen] = useState(filterDefs.length > 0) // default OCHIQ
   const pageSize = 20
 
+  const filterKey = JSON.stringify(filterParams)
+
+  // Filtr o'zgarsa sahifani 1 ga qaytaramiz
+  useEffect(() => {
+    setPage(1)
+  }, [filterKey])
+
   const params = useMemo(() => {
-    const p = { page, page_size: pageSize }
-    if (query) p.search = query
-    return p
-  }, [page, query])
+    return { page, page_size: pageSize, ...filterParams }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filterKey])
 
   const { data, loading, error, reload } = useFetch(view.endpoint, params)
+  // Backend natija bo'lmasa 404 "...topilmadi" qaytaradi — buni xato emas, "bo'sh" deb hisoblaymiz
+  const notFound = error && /^404\b/.test(error)
+  const realError = error && !notFound
   const { rows: allRows, count, totalKnown } = extractList(data)
 
-  // Ba'zi endpointlar (masalan notif) `page` ni hurmat qilmay HAMMA yozuvni
-  // bir martada qaytaradi. Bunday holda sahifalash VA qidiruvni o'zimiz qilamiz.
+  // Hammasini birdan qaytaradigan endpointlar uchun client-side sahifalash
   const clientSide = !totalKnown && allRows.length > pageSize
-
-  // Client-side: ID bo'yicha saralash + (qidiruv bo'lsa) matn bo'yicha filtrlash
   let pool = allRows
   if (clientSide) {
     pool = [...allRows].sort((a, b) => (Number(b?.id) || 0) - (Number(a?.id) || 0))
-    if (query) {
-      const q = query.toLowerCase()
-      pool = pool.filter((r) =>
-        Object.values(r).some(
-          (v) => (typeof v === 'string' || typeof v === 'number') && String(v).toLowerCase().includes(q)
-        )
-      )
-    }
   }
-
   const knownTotal = clientSide || totalKnown
   const totalCount = clientSide ? pool.length : count
-  const totalPages = knownTotal
-    ? Math.max(1, Math.ceil((totalCount || 0) / pageSize))
-    : null
+  const totalPages = knownTotal ? Math.max(1, Math.ceil((totalCount || 0) / pageSize)) : null
   const rows = clientSide ? pool.slice((page - 1) * pageSize, page * pageSize) : allRows
 
   const hasNext = knownTotal ? page < totalPages : allRows.length >= pageSize
   const hasPrev = page > 1
   const showPagination = hasNext || hasPrev
 
-  const detailTemplate = detailMap[view.endpoint]
-  const editConfig = getEditConfig(view.endpoint)
-  const hasEdit = !!editConfig
   const deleteTemplate = getDeleteTemplate(view.endpoint)
   const createConfig = getCreateConfig(view.endpoint)
 
   const rowId = (row) => row.id ?? row.device_id ?? row.pk
 
+  // "Ko'rish" — alohida sahifaga o'tadi (qaysi view ekani ?ep= orqali)
   const openDetail = (row) => {
     const id = rowId(row)
     if (id === undefined || id === null) return
-    setDetail({
-      endpoint: detailTemplate.replace('{id}', id),
-      title: `${view.label} — #${id}`,
-    })
-  }
-
-  const openEdit = (row) => {
-    const id = rowId(row)
-    if (id === undefined || id === null) return
-    // Har bir nishon manzilini {id} bilan to'ldiramiz.
-    // patch=null bo'lsa — standart detail/{id}/ ishlatiladi.
-    const targets = editConfig.targets.map((t) => ({
-      patch: (t.patch || detailTemplate).replace('{id}', id),
-      fields: t.fields,
-    }))
-    setEdit({
-      endpoint: detailTemplate.replace('{id}', id), // GET prefill
-      targets,
-      title: `${view.label} — tahrirlash #${id}`,
-    })
-  }
-
-  const openDelete = (row) => {
-    const id = rowId(row)
-    if (id === undefined || id === null) return
-    setDel({
-      endpoint: deleteTemplate.replace('{id}', id),
-      title: `${view.label} #${id} — o'chirish`,
-    })
-  }
-
-  const submitSearch = (e) => {
-    e.preventDefault()
-    setPage(1)
-    setQuery(search)
+    navigate(`/section/${section.key}/${id}?ep=${encodeURIComponent(view.endpoint)}`)
   }
 
   return (
@@ -151,12 +106,7 @@ function SectionContent({ section, view, tab, setTab }) {
             <button
               key={i}
               className={`tab ${i === tab ? 'active' : ''}`}
-              onClick={() => {
-                setTab(i)
-                setPage(1)
-                setQuery('')
-                setSearch('')
-              }}
+              onClick={() => setTab(i)}
             >
               {v.label}
             </button>
@@ -166,18 +116,21 @@ function SectionContent({ section, view, tab, setTab }) {
 
       <div className="card">
         <div className="card-toolbar">
-          <form className="search-box small" onSubmit={submitSearch}>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Qidirish..."
-            />
-            <button type="submit" className="btn-mini">Izlash</button>
-          </form>
-          <div className="toolbar-right">
+          <div className="toolbar-right" style={{ marginLeft: 'auto' }}>
             <span className="count-pill">
               {totalCount || 0} ta yozuv{knownTotal ? '' : ' (shu sahifa)'}
             </span>
+            {filterDefs.length > 0 && (
+              <button
+                className={`btn-filter ${filterOpen ? 'on' : ''}`}
+                onClick={() => setFilterOpen((o) => !o)}
+              >
+                <SlidersHorizontal size={15} /> Filtr
+                {Object.keys(filterParams).length > 0 && (
+                  <span className="filter-badge">{Object.keys(filterParams).length}</span>
+                )}
+              </button>
+            )}
             {createConfig && (
               <button className="btn-add" onClick={() => setCreating(true)}>
                 <Plus size={16} /> Qo'shish
@@ -186,8 +139,17 @@ function SectionContent({ section, view, tab, setTab }) {
           </div>
         </div>
 
+        {filterOpen && filterDefs.length > 0 && (
+          <FilterPanel
+            filters={filterDefs}
+            applied={filterParams}
+            onApply={(p) => setFilterParams(p)}
+            onClose={() => setFilterOpen(false)}
+          />
+        )}
+
         {loading && <div className="empty">Yuklanmoqda...</div>}
-        {error && (
+        {realError && (
           <div className="error-box">
             Xatolik: {error}
             <div className="error-hint">
@@ -195,56 +157,26 @@ function SectionContent({ section, view, tab, setTab }) {
             </div>
           </div>
         )}
-        {!loading && !error && (
+        {!loading && !realError && (
           <DataTable
             columns={view.columns}
-            rows={rows}
-            onView={detailTemplate ? openDetail : undefined}
-            onEdit={detailTemplate && hasEdit ? openEdit : undefined}
-            onDelete={deleteTemplate ? openDelete : undefined}
+            rows={notFound ? [] : rows}
+            onView={openDetail}
           />
         )}
 
         {showPagination && !loading && !error && (
           <div className="pagination">
-            <button
-              className="btn-mini"
-              disabled={!hasPrev}
-              onClick={() => setPage((p) => p - 1)}
-            >
+            <button className="btn-mini" disabled={!hasPrev} onClick={() => setPage((p) => p - 1)}>
               <ChevronLeft size={16} /> Oldingi
             </button>
             <span>{knownTotal ? `${page} / ${totalPages}` : `Sahifa ${page}`}</span>
-            <button
-              className="btn-mini"
-              disabled={!hasNext}
-              onClick={() => setPage((p) => p + 1)}
-            >
+            <button className="btn-mini" disabled={!hasNext} onClick={() => setPage((p) => p + 1)}>
               Keyingi <ChevronRight size={16} />
             </button>
           </div>
         )}
       </div>
-
-      {detail && (
-        <DetailModal
-          key={detail.endpoint}
-          endpoint={detail.endpoint}
-          title={detail.title}
-          onClose={() => setDetail(null)}
-        />
-      )}
-
-      {edit && (
-        <EditModal
-          key={edit.endpoint}
-          endpoint={edit.endpoint}
-          targets={edit.targets}
-          title={edit.title}
-          onClose={() => setEdit(null)}
-          onSaved={reload}
-        />
-      )}
 
       {creating && createConfig && (
         <CreateModal
@@ -253,18 +185,6 @@ function SectionContent({ section, view, tab, setTab }) {
           title={`${section.title} — yangi qo'shish`}
           onClose={() => setCreating(false)}
           onSaved={reload}
-        />
-      )}
-
-      {del && (
-        <ConfirmModal
-          title={del.title}
-          message="Bu yozuvni o'chirmoqchimisiz? Bu amalni qaytarib bo'lmaydi."
-          onConfirm={async () => {
-            await deleteItem(del.endpoint)
-            reload()
-          }}
-          onClose={() => setDel(null)}
         />
       )}
     </div>

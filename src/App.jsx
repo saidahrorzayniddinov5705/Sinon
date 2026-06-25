@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import ListPage from './pages/ListPage'
+import DetailPage from './pages/DetailPage'
 
 function ProtectedRoute({ children }) {
   const auth = useAuth()
@@ -25,6 +26,7 @@ export default function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="section/:key" element={<ListPage />} />
+        <Route path="section/:key/:id" element={<DetailPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

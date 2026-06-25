@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 
 // O'chirishni tasdiqlash oynasi. onConfirm async funksiya bo'lishi mumkin.
-export default function ConfirmModal({ title, message, confirmText = "O'chirish", onConfirm, onClose }) {
+export default function ConfirmModal({ title, message, confirmText = "O'chirish", onConfirm, onClose, onDone }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
@@ -11,7 +11,8 @@ export default function ConfirmModal({ title, message, confirmText = "O'chirish"
     setErr('')
     try {
       await onConfirm()
-      onClose()
+      if (onDone) onDone()
+      else onClose()
     } catch (e) {
       const d = e.response?.data
       setErr(
