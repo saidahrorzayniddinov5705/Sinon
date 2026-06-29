@@ -49,7 +49,7 @@ const orderCols = [
 ]
 
 export default function Dashboard() {
-  const { data, loading, error } = useFetch('/api/v1/super-admin/orders/list-create/', { page_size: 6 })
+  const { data, loading, error } = useFetch('/api/v1/super-admin/orders/list/', { page_size: 6 })
   const { rows } = extractList(data)
 
   return (
@@ -75,8 +75,7 @@ export default function Dashboard() {
             <h3>So'nggi buyurtmalar</h3>
           </div>
           {loading && <div className="empty">Yuklanmoqda...</div>}
-          {error && <div className="error-box">Xatolik: {error}</div>}
-          {!loading && !error && <DataTable columns={orderCols} rows={rows} />}
+          {!loading && (error ? <div className="empty">Buyurtmalar topilmadi</div> : <DataTable columns={orderCols} rows={rows} />)}
         </div>
 
         <div className="card">

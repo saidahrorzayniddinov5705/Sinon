@@ -145,6 +145,7 @@ function SectionContent({ section, view, tab, setTab }) {
             applied={filterParams}
             onApply={(p) => setFilterParams(p)}
             onClose={() => setFilterOpen(false)}
+            rows={allRows}
           />
         )}
 

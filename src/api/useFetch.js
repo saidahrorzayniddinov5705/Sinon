@@ -1,18 +1,24 @@
 import { useState, useEffect, useCallback } from 'react'
 import client from './client'
 
-// Xato xabarini backend formatidan ajratib oladi
+// Xato xabarini backend formatidan ajratib oladi.
+// HTML javob (server 404/500 sahifasi) bo'lsa — xom HTML'ni KO'RSATMAYMIZ.
 function extractError(e) {
   const d = e.response?.data
-  const msg =
-    d?.message || // Sinon envelope: { success:false, message }
-    d?.detail || // DRF standart
-    (typeof d === 'string' ? d : null) ||
-    e.response?.statusText ||
-    e.message ||
-    "Noma'lum xatolik"
+  const status = e.response?.status
+  let msg = d?.message || d?.detail
+  // Faqat HTML BO'LMAGAN qisqa matn bo'lsa ishlatamiz
+  if (!msg && typeof d === 'string' && !/<\s*(html|!doctype)/i.test(d) && d.length < 200) {
+    msg = d
+  }
+  if (!msg) {
+    msg =
+      status === 404 ? 'Resurs topilmadi' :
+      status === 500 ? 'Server xatosi' :
+      e.response?.statusText || e.message || "Noma'lum xatolik"
+  }
   const text = typeof msg === 'string' ? msg : JSON.stringify(msg)
-  return `${e.response?.status || ''} ${text}`.trim()
+  return `${status || ''} ${text}`.trim()
 }
 
 // Berilgan endpointdan GET qiladi. Eski/keraksiz javoblarni e'tiborsiz qoldiradi
@@ -26,6 +32,14 @@ export default function useFetch(endpoint, params) {
   const paramKey = JSON.stringify(params || {})
 
   useEffect(() => {
+    // Endpoint bo'lmasa — so'rov yubormaymiz (bo'sh/null URL bilan bog'us so'rov oldini olamiz)
+    if (!endpoint) {
+      setLoading(false)
+      setData(null)
+      setError(null)
+      return
+    }
+
     let ignore = false
     setLoading(true)
     setError(null)

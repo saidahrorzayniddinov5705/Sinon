@@ -43,6 +43,26 @@ function formatMoney(v) {
   return n.toLocaleString('uz-UZ') + " so'm"
 }
 
+// Uzun nollarni tozalaydi: "75235.00000000" -> "75235", "41.310000" -> "41.31"
+function trimNum(s) {
+  if (!/^-?\d+\.\d+$/.test(s)) return s
+  return s.replace(/(\.\d*?[1-9])0+$/, '$1').replace(/\.0+$/, '')
+}
+
+// Maydon butun qatorni egallashi kerakmi (rasm, JSON, uzun matn, massiv)
+export function isWideValue(v) {
+  if (typeof v === 'string') return /\.(png|jpe?g|gif|webp|svg)$/i.test(v) || v.length > 55
+  if (Array.isArray(v)) return v.length > 0
+  if (v && typeof v === 'object') {
+    const entries = Object.entries(v).filter(([, x]) => x !== null && x !== '' && typeof x !== 'object')
+    const hasName =
+      v.full_name || v.name || v.title || v.lab_name || v.username ||
+      v.order_id || v.region || v.district || v.street || v.address
+    return !(hasName || entries.length <= 1)
+  }
+  return false
+}
+
 function renderValue(v, key) {
   if (v === null || v === undefined || v === '') return <span className="muted">—</span>
   if (typeof v === 'boolean') return <span className={`badge ${v ? 'badge-green' : 'badge-red'}`}>{v ? 'Ha' : "Yo'q"}</span>
@@ -52,7 +72,10 @@ function renderValue(v, key) {
     return <img className="detail-img" src={v} alt="" onError={(e) => (e.target.style.display = 'none')} />
   if (typeof v === 'string' && /^https?:\/\//i.test(v))
     return <a href={v} target="_blank" rel="noreferrer" className="detail-link">{v}</a>
-  if (typeof v === 'string') return humanizeAmounts(v)
+  if (typeof v === 'string') {
+    if (/^-?\d+\.\d+$/.test(v)) return trimNum(v) // uzun nolli o'nlik son
+    return humanizeAmounts(v)
+  }
   if (Array.isArray(v)) {
     if (v.length === 0) return <span className="muted">—</span>
     return (
@@ -118,7 +141,7 @@ export function FieldList({ obj }) {
   return (
     <div className="detail-grid">
       {entries.map(([k, v]) => (
-        <div className="detail-row" key={k}>
+        <div className={`detail-row ${isWideValue(v) ? 'wide' : ''}`} key={k}>
           <div className="detail-key">{k}</div>
           <div className="detail-val">{renderValue(v, k)}</div>
         </div>

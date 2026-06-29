@@ -63,7 +63,7 @@ export const filters = {
       "before": "created_at_before"
     }
   ],
-  "/api/v1/super-admin/auth/list-create/": [
+  "/api/v1/super-admin/auth/users/list/": [
     {
       "key": "contact_type",
       "label": "Kontakt turi",
@@ -90,28 +90,6 @@ export const filters = {
     {
       "key": "status",
       "label": "Holat",
-      "type": "bool"
-    }
-  ],
-  "/api/v1/super-admin/auth/sms-code/": [
-    {
-      "key": "_type",
-      "label": "Turi",
-      "type": "select",
-      "options": [
-        "change-password",
-        "register",
-        "update-contact"
-      ]
-    },
-    {
-      "key": "contact",
-      "label": "Kontakt",
-      "type": "text"
-    },
-    {
-      "key": "verified",
-      "label": "Tasdiqlangan",
       "type": "bool"
     }
   ],
@@ -170,10 +148,15 @@ export const filters = {
       "max": "experience_year_max"
     }
   ],
-  "/api/v1/super-admin/doctor-medical-service/list-create/": [
+  "/api/v1/super-admin/doctor-medical-service/list/": [
     {
       "key": "doctor",
       "label": "Shifokor ID",
+      "type": "number"
+    },
+    {
+      "key": "price",
+      "label": "Narx",
       "type": "number"
     },
     {
@@ -226,7 +209,13 @@ export const filters = {
     {
       "key": "title__icontains",
       "label": "Sarlavha",
-      "type": "text"
+      "type": "select",
+      "options": [
+        "t",
+        "e",
+        "x",
+        "t"
+      ]
     },
     {
       "label": "Yaratilgan sana",
@@ -239,7 +228,13 @@ export const filters = {
     {
       "key": "name__icontains",
       "label": "Nomi",
-      "type": "text"
+      "type": "select",
+      "options": [
+        "t",
+        "e",
+        "x",
+        "t"
+      ]
     },
     {
       "key": "status",
@@ -257,12 +252,24 @@ export const filters = {
     {
       "key": "call__icontains",
       "label": "Telefon",
-      "type": "text"
+      "type": "select",
+      "options": [
+        "t",
+        "e",
+        "x",
+        "t"
+      ]
     },
     {
       "key": "name__icontains",
       "label": "Nomi",
-      "type": "text"
+      "type": "select",
+      "options": [
+        "t",
+        "e",
+        "x",
+        "t"
+      ]
     },
     {
       "key": "status",
@@ -285,7 +292,13 @@ export const filters = {
     {
       "key": "title__icontains",
       "label": "Sarlavha",
-      "type": "text"
+      "type": "select",
+      "options": [
+        "t",
+        "e",
+        "x",
+        "t"
+      ]
     },
     {
       "label": "Yaratilgan sana",
@@ -298,7 +311,13 @@ export const filters = {
     {
       "key": "device_id__icontains",
       "label": "Qurilma ID",
-      "type": "text"
+      "type": "select",
+      "options": [
+        "t",
+        "e",
+        "x",
+        "t"
+      ]
     },
     {
       "key": "user",
@@ -312,306 +331,31 @@ export const filters = {
       "before": "created_at_before"
     }
   ],
-  "/api/v1/super-admin/services/banner/": [
-    {
-      "key": "_type",
-      "label": "Turi",
-      "type": "select",
-      "options": [
-        "elon",
-        "link"
-      ]
-    },
-    {
-      "key": "status",
-      "label": "Holat",
-      "type": "bool"
-    },
-    {
-      "key": "title__icontains",
-      "label": "Sarlavha",
-      "type": "text"
-    },
-    {
-      "label": "Yaratilgan sana",
-      "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
-    }
-  ],
-  "/api/v1/super-admin/services/service/": [
-    {
-      "key": "name__icontains",
-      "label": "Nomi",
-      "type": "text"
-    },
-    {
-      "key": "status",
-      "label": "Holat",
-      "type": "bool"
-    },
-    {
-      "label": "Yaratilgan sana",
-      "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
-    }
-  ],
-  "/api/v1/super-admin/services/contact-us/": [
-    {
-      "key": "call__icontains",
-      "label": "Telefon",
-      "type": "text"
-    },
-    {
-      "key": "name__icontains",
-      "label": "Nomi",
-      "type": "text"
-    },
-    {
-      "key": "status",
-      "label": "Holat",
-      "type": "bool"
-    },
-    {
-      "label": "Yaratilgan sana",
-      "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
-    }
-  ],
-  "/api/v1/super-admin/services/social-network/": [
-    {
-      "key": "status",
-      "label": "Holat",
-      "type": "bool"
-    },
-    {
-      "key": "title__icontains",
-      "label": "Sarlavha",
-      "type": "text"
-    },
-    {
-      "label": "Yaratilgan sana",
-      "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
-    }
-  ],
-  "/api/v1/super-admin/services/share-app/": [
-    {
-      "key": "device_id__icontains",
-      "label": "Qurilma ID",
-      "type": "text"
-    },
-    {
-      "key": "user",
-      "label": "Foydalanuvchi ID",
-      "type": "number"
-    },
-    {
-      "label": "Yaratilgan sana",
-      "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
-    }
-  ],
-  "/api/v1/super-admin/laboratory/list-create/": [
-    {
-      "key": "district__icontains",
-      "label": "Tuman",
-      "type": "text"
-    },
-    {
-      "key": "lab_name__icontains",
-      "label": "Lab nomi",
-      "type": "text"
-    },
-    {
-      "key": "region__icontains",
-      "label": "Viloyat",
-      "type": "text"
-    },
-    {
-      "key": "status",
-      "label": "Holat",
-      "type": "bool"
-    },
-    {
-      "label": "Yaratilgan sana",
-      "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
-    },
-    {
-      "label": "Buyurtmalar soni",
-      "type": "numrange",
-      "min": "orders_count__gte",
-      "max": "orders_count__lte"
-    },
-    {
-      "label": "Reyting",
-      "type": "numrange",
-      "min": "rating__gte",
-      "max": "rating__lte"
-    }
-  ],
-  "/api/v1/super-admin/laboratory/service/list-create/": [
-    {
-      "key": "name__icontains",
-      "label": "Nomi",
-      "type": "text"
-    },
-    {
-      "key": "status",
-      "label": "Holat",
-      "type": "bool"
-    },
-    {
-      "label": "Yaratilgan sana",
-      "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
-    },
-    {
-      "label": "Max narx",
-      "type": "numrange",
-      "min": "max_price__gte",
-      "max": "max_price__lte"
-    },
-    {
-      "label": "Min narx",
-      "type": "numrange",
-      "min": "min_price__gte",
-      "max": "min_price__lte"
-    },
-    {
-      "label": "QQS %",
-      "type": "numrange",
-      "min": "vat_percent__gte",
-      "max": "vat_percent__lte"
-    }
-  ],
-  "/api/v1/super-admin/laboratory/order/list-create": [
-    {
-      "key": "laboratory",
-      "label": "Lab ID",
-      "type": "number"
-    },
-    {
-      "key": "patient",
-      "label": "Bemor ID",
-      "type": "number"
-    },
-    {
-      "key": "payment_type",
-      "label": "To'lov turi",
-      "type": "select",
-      "options": [
-        "balance",
-        "cash"
-      ]
-    },
+  "/api/v1/super-admin/laboratory/order/list/": [
     {
       "key": "status",
       "label": "Holat",
       "type": "select",
       "options": [
+        "WAITING",
         "ACCEPTED",
-        "ARRIVED",
-        "CANCELLED",
-        "FINISHED",
         "ON_THE_WAY",
-        "WAITING"
+        "ARRIVED",
+        "FINISHED",
+        "CANCELLED"
       ]
     },
     {
       "label": "Yaratilgan sana",
       "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
-    },
-    {
-      "label": "Rejalashtirilgan",
-      "type": "daterange",
-      "after": "planned_at_after",
-      "before": "planned_at_before"
-    },
-    {
-      "label": "Reyting",
-      "type": "numrange",
-      "min": "rating__gte",
-      "max": "rating__lte"
+      "after": "created_from",
+      "before": "created_to"
     },
     {
       "label": "Summa",
       "type": "numrange",
-      "min": "summa__gte",
-      "max": "summa__lte"
-    }
-  ],
-  "/api/v1/super-admin/laboratory/application/document/list-create/": [
-    {
-      "key": "district__icontains",
-      "label": "Tuman",
-      "type": "text"
-    },
-    {
-      "key": "lab_name__icontains",
-      "label": "Lab nomi",
-      "type": "text"
-    },
-    {
-      "key": "region__icontains",
-      "label": "Viloyat",
-      "type": "text"
-    },
-    {
-      "key": "status",
-      "label": "Holat",
-      "type": "select",
-      "options": [
-        "approved",
-        "cancelled",
-        "finished",
-        "pending"
-      ]
-    },
-    {
-      "label": "Yaratilgan sana",
-      "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
-    },
-    {
-      "label": "Tajriba",
-      "type": "numrange",
-      "min": "experience_years__gte",
-      "max": "experience_years__lte"
-    }
-  ],
-  "/api/v1/super-admin/laboratory/choice-service/create-list/": [
-    {
-      "key": "laboratory",
-      "label": "Lab ID",
-      "type": "number"
-    },
-    {
-      "key": "service",
-      "label": "Xizmat ID",
-      "type": "number"
-    },
-    {
-      "label": "Yaratilgan sana",
-      "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
-    },
-    {
-      "label": "Narx",
-      "type": "numrange",
-      "min": "price__gte",
-      "max": "price__lte"
+      "min": "summa_from",
+      "max": "summa_to"
     }
   ],
   "/api/v1/super-admin/medical-service/list/": [
@@ -645,94 +389,38 @@ export const filters = {
       "max": "vat_percent_max"
     }
   ],
-  "/api/v1/super-admin/orders/list-create/": [
+  "/api/v1/super-admin/notif/list/": [
     {
-      "key": "doctor",
-      "label": "Shifokor ID",
+      "key": "device_id",
+      "label": "Qurilma ID",
       "type": "number"
-    },
-    {
-      "key": "patient",
-      "label": "Bemor ID",
-      "type": "number"
-    },
-    {
-      "key": "payment_type",
-      "label": "To'lov turi",
-      "type": "select",
-      "options": [
-        "balance",
-        "cash"
-      ]
-    },
+    }
+  ],
+  "/api/v1/super-admin/orders/list/": [
     {
       "key": "status",
       "label": "Holat",
       "type": "select",
       "options": [
+        "WAITING",
         "ACCEPTED",
-        "ARRIVED",
-        "CANCELLED",
-        "FINISHED",
         "ON_THE_WAY",
-        "WAITING"
+        "ARRIVED",
+        "FINISHED",
+        "CANCELLED"
       ]
     },
     {
-      "label": "Yaratilgan sana",
+      "label": "Sana",
       "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
-    },
-    {
-      "label": "Rejalashtirilgan",
-      "type": "daterange",
-      "after": "planned_at_after",
-      "before": "planned_at_before"
-    },
-    {
-      "label": "Reyting",
-      "type": "numrange",
-      "min": "rating__gte",
-      "max": "rating__lte"
+      "after": "date_from",
+      "before": "date_to"
     },
     {
       "label": "Summa",
       "type": "numrange",
-      "min": "summa__gte",
-      "max": "summa__lte"
-    }
-  ],
-  "/api/v1/super-admin/orders/add-patient/": [
-    {
-      "key": "gender",
-      "label": "Jinsi",
-      "type": "select",
-      "options": [
-        "ayol",
-        "erkak"
-      ]
-    },
-    {
-      "key": "is_self",
-      "label": "O'zi",
-      "type": "bool"
-    },
-    {
-      "key": "patient",
-      "label": "Bemor ID",
-      "type": "number"
-    },
-    {
-      "key": "status",
-      "label": "Holat",
-      "type": "bool"
-    },
-    {
-      "label": "Yaratilgan sana",
-      "type": "daterange",
-      "after": "created_at_after",
-      "before": "created_at_before"
+      "min": "min_summa",
+      "max": "max_summa"
     }
   ],
   "/api/v1/super-admin/privacy-policy/legal-documents/": [
@@ -811,7 +499,7 @@ export const filters = {
       "before": "created_at_before"
     }
   ],
-  "/api/v1/super-admin/address/list-create/": [
+  "/api/v1/super-admin/address/list/": [
     {
       "key": "address_type",
       "label": "Manzil turi",
@@ -823,9 +511,20 @@ export const filters = {
       ]
     },
     {
-      "key": "district__icontains",
+      "key": "district",
       "label": "Tuman",
       "type": "text"
+    },
+    {
+      "key": "district__icontains",
+      "label": "Tuman",
+      "type": "select",
+      "options": [
+        "t",
+        "e",
+        "x",
+        "t"
+      ]
     },
     {
       "key": "patient",
@@ -833,9 +532,20 @@ export const filters = {
       "type": "number"
     },
     {
-      "key": "region__icontains",
+      "key": "region",
       "label": "Viloyat",
       "type": "text"
+    },
+    {
+      "key": "region__icontains",
+      "label": "Viloyat",
+      "type": "select",
+      "options": [
+        "t",
+        "e",
+        "x",
+        "t"
+      ]
     },
     {
       "key": "status",

@@ -9,7 +9,18 @@ function buildParams(draft) {
   return out
 }
 
-export default function FilterPanel({ filters, applied, onApply, onClose }) {
+// Joriy ma'lumotdan maydon bo'yicha noyob qiymatlar (dropdown uchun)
+function distinctOptions(rows, key) {
+  if (!rows || !rows.length) return []
+  const set = new Set()
+  rows.forEach((r) => {
+    const v = r?.[key]
+    if (v !== null && v !== undefined && v !== '' && typeof v !== 'object') set.add(String(v))
+  })
+  return [...set].sort()
+}
+
+export default function FilterPanel({ filters, applied, onApply, onClose, rows = [] }) {
   const [draft, setDraft] = useState(() => ({ ...applied }))
   const set = (k, v) => setDraft((d) => ({ ...d, [k]: v }))
 
@@ -32,7 +43,10 @@ export default function FilterPanel({ filters, applied, onApply, onClose }) {
     <div className="filter-panel">
       <div className="filter-grid">
         {filters.map((f, i) => (
-          <div className="filter-field" key={i}>
+          <div
+            className={`filter-field ${f.type === 'daterange' || f.type === 'numrange' ? 'range' : ''}`}
+            key={i}
+          >
             <label>{f.label}</label>
 
             {f.type === 'select' ? (
@@ -68,12 +82,25 @@ export default function FilterPanel({ filters, applied, onApply, onClose }) {
                 <input type="number" placeholder="max" value={draft[f.max] ?? ''} onChange={(e) => set(f.max, e.target.value)} disabled={!f.max} />
               </div>
             ) : (
-              <input
-                type="text"
-                value={draft[f.key] ?? ''}
-                onChange={(e) => set(f.key, e.target.value)}
-                placeholder="..."
-              />
+              (() => {
+                // Matn filtri — ma'lumotda qiymatlar bo'lsa dropdown, aks holda matn
+                const opts = distinctOptions(rows, f.key)
+                return opts.length ? (
+                  <select value={draft[f.key] ?? ''} onChange={(e) => set(f.key, e.target.value)}>
+                    <option value="">— hammasi —</option>
+                    {opts.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={draft[f.key] ?? ''}
+                    onChange={(e) => set(f.key, e.target.value)}
+                    placeholder="..."
+                  />
+                )
+              })()
             )}
           </div>
         ))}

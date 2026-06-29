@@ -50,10 +50,14 @@ const customCreate = {
   },
 }
 
-// Create (POST) yo'q bo'lgan bo'limlar
+// Create (POST) yo'q bo'lgan bo'limlar (backend list endpoint'ida POST yo'q)
 const noCreate = new Set([
   '/api/v1/super-admin/profile/doctor-profiles/',
   '/api/v1/super-admin/profile/patient-profiles/',
+  '/api/v1/super-admin/address/list/',
+  '/api/v1/super-admin/auth/users/list/',
+  '/api/v1/super-admin/notif/list/',
+  '/api/v1/super-admin/notif/device/list/',
 ])
 
 // Berilgan list endpoint uchun create konfiguratsiyasi: { url, fields } yoki null.

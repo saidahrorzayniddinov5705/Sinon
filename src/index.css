@@ -432,7 +432,9 @@ input { font-family: inherit; }
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
 }
-.filter-field { display: flex; flex-direction: column; gap: 5px; }
+.filter-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+/* Sana/raqam oralig'i 2 ta inputli — kengroq joy egallaydi */
+.filter-field.range { grid-column: span 2; }
 .filter-field label { font-size: 12px; font-weight: 600; color: var(--muted); }
 .filter-field input,
 .filter-field select {
