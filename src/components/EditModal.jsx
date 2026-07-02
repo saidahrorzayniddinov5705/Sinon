@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { X } from 'lucide-react'
 import useFetch, { unwrapData } from '../api/useFetch'
 import { patchItem } from '../api/crud'
+import MapPicker from './MapPicker'
 
 // datetime-local input uchun ISO sanani qisqartiradi
 function toLocalInput(v) {
@@ -37,8 +38,8 @@ function convertVal(f, val) {
   return val // text / select / date / textarea
 }
 
-export default function EditModal({ endpoint, targets, title, onClose, onSaved }) {
-  const { data, loading, error } = useFetch(endpoint)
+export default function EditModal({ endpoint, targets, title, onClose, onSaved, client }) {
+  const { data, loading, error } = useFetch(endpoint, undefined, client)
   const [form, setForm] = useState(null)
   const [initial, setInitial] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -52,7 +53,14 @@ export default function EditModal({ endpoint, targets, title, onClose, onSaved }
     if (data && !form) {
       const obj = unwrapData(data)
       const init = {}
-      allFields.forEach((f) => (init[f.name] = initValue(f, obj)))
+      allFields.forEach((f) => {
+        if (f.type === 'latlng') {
+          init[f.latName] = obj?.[f.latName] ?? ''
+          init[f.lngName] = obj?.[f.lngName] ?? ''
+          return
+        }
+        init[f.name] = initValue(f, obj)
+      })
       setForm(init)
       setInitial(init)
     }
@@ -71,6 +79,11 @@ export default function EditModal({ endpoint, targets, title, onClose, onSaved }
     const changed = {}
     const fileEntries = []
     target.fields.forEach((f) => {
+      if (f.type === 'latlng') {
+        if (form[f.latName] !== initial[f.latName]) changed[f.latName] = form[f.latName]
+        if (form[f.lngName] !== initial[f.lngName]) changed[f.lngName] = form[f.lngName]
+        return
+      }
       const val = form[f.name]
       if (f.type === 'file') {
         if (val instanceof File) fileEntries.push([f.name, [val]])
@@ -116,7 +129,7 @@ export default function EditModal({ endpoint, targets, title, onClose, onSaved }
     setSaving(true)
     try {
       for (const job of jobs) {
-        await patchItem(job.patch, job.payload)
+        await patchItem(job.patch, job.payload, client)
       }
       onSaved?.()
       onClose()
@@ -150,13 +163,22 @@ export default function EditModal({ endpoint, targets, title, onClose, onSaved }
             <form className="edit-form" onSubmit={handleSubmit}>
               <p className="form-note">Faqat o'zgartirgan maydonlaringiz saqlanadi.</p>
               {allFields.map((f) => (
-                <div className="form-field" key={f.name}>
+                <div className="form-field" key={f.name || f.latName}>
                   <label>
                     {f.label}
                     {f.required && <span className="req"> *</span>}
                   </label>
 
-                  {f.type === 'bool' ? (
+                  {f.type === 'latlng' ? (
+                    <MapPicker
+                      latitude={form[f.latName]}
+                      longitude={form[f.lngName]}
+                      onChange={({ lat, lng }) => {
+                        setField(f.latName, lat)
+                        setField(f.lngName, lng)
+                      }}
+                    />
+                  ) : f.type === 'bool' ? (
                     <label className="switch">
                       <input
                         type="checkbox"

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { createItem } from '../api/crud'
+import MapPicker from './MapPicker'
 
 // datetime-local -> ISO
 function toISO(val) {
@@ -17,10 +18,15 @@ function convertVal(f, val) {
   return val
 }
 
-export default function CreateModal({ url, fields, title, onClose, onSaved }) {
+export default function CreateModal({ url, fields, title, onClose, onSaved, client }) {
   const [form, setForm] = useState(() => {
     const init = {}
     fields.forEach((f) => {
+      if (f.type === 'latlng') {
+        init[f.latName] = ''
+        init[f.lngName] = ''
+        return
+      }
       init[f.name] = f.type === 'bool' ? false : f.type === 'file' || f.type === 'files' ? null : ''
     })
     return init
@@ -42,6 +48,11 @@ export default function CreateModal({ url, fields, title, onClose, onSaved }) {
     if (hasFiles) {
       const fd = new FormData()
       fields.forEach((f) => {
+        if (f.type === 'latlng') {
+          if (form[f.latName] !== '') fd.append(f.latName, form[f.latName])
+          if (form[f.lngName] !== '') fd.append(f.lngName, form[f.lngName])
+          return
+        }
         const val = form[f.name]
         if (f.type === 'file') {
           if (val instanceof File) fd.append(f.name, val)
@@ -63,6 +74,11 @@ export default function CreateModal({ url, fields, title, onClose, onSaved }) {
     // JSON
     const payload = {}
     fields.forEach((f) => {
+      if (f.type === 'latlng') {
+        if (form[f.latName] !== '') payload[f.latName] = form[f.latName]
+        if (form[f.lngName] !== '') payload[f.lngName] = form[f.lngName]
+        return
+      }
       const val = form[f.name]
       if (f.type === 'bool') {
         payload[f.name] = !!val
@@ -82,7 +98,7 @@ export default function CreateModal({ url, fields, title, onClose, onSaved }) {
     setSaveErr('')
     setSaving(true)
     try {
-      await createItem(url, buildPayload())
+      await createItem(url, buildPayload(), client)
       onSaved?.()
       onClose()
     } catch (err) {
@@ -111,13 +127,22 @@ export default function CreateModal({ url, fields, title, onClose, onSaved }) {
           <form className="edit-form" onSubmit={handleSubmit}>
             <p className="form-note">Yangi yozuv qo'shilmoqda. (*) — majburiy maydon.</p>
             {fields.map((f) => (
-              <div className="form-field" key={f.name}>
+              <div className="form-field" key={f.name || f.latName}>
                 <label>
                   {f.label}
                   {f.required && <span className="req"> *</span>}
                 </label>
 
-                {f.type === 'bool' ? (
+                {f.type === 'latlng' ? (
+                  <MapPicker
+                    latitude={form[f.latName]}
+                    longitude={form[f.lngName]}
+                    onChange={({ lat, lng }) => {
+                      setField(f.latName, lat)
+                      setField(f.lngName, lng)
+                    }}
+                  />
+                ) : f.type === 'bool' ? (
                   <label className="switch">
                     <input
                       type="checkbox"

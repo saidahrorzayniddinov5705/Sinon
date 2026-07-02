@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { User, Lock, Eye, EyeOff, ShieldCheck, BarChart3, Database } from 'lucide-react'
 import { login } from '../api/auth'
 import { useAuth } from '../context/AuthContext'
+import RoleSwitch from '../components/RoleSwitch'
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -56,6 +57,8 @@ export default function Login() {
           <div className="logo mobile-logo">
             Logo<span>Here</span>
           </div>
+          <RoleSwitch active="admin" />
+
           <h2>Xush kelibsiz 👋</h2>
           <p className="login-sub">Davom etish uchun Super Admin hisobingizga kiring</p>
 

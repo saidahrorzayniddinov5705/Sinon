@@ -165,11 +165,47 @@ export const sections = [
         columns: [
           { key: 'id', label: 'ID' },
           { key: 'order_id', label: 'Buyurtma №' },
+          { key: 'patient_name', label: 'Bemor' },
+          { key: 'laboratory_name', label: 'Laboratoriya' },
           { key: 'payment_type', label: "To'lov", type: 'badge' },
           { key: 'summa', label: 'Summa', type: 'money' },
           { key: 'rating', label: 'Reyting' },
           { key: 'status', label: 'Holat', type: 'badge' },
           { key: 'planned_at', label: 'Rejalashtirilgan', type: 'date' },
+          { key: 'created_at', label: 'Yaratilgan', type: 'date' },
+        ],
+      },
+      {
+        label: 'Laboratoriyalar',
+        endpoint: '/api/v1/super-admin/laboratory-staff/list/',
+        columns: [
+          { key: 'id', label: 'ID' },
+          { key: 'logo', label: 'Logo', type: 'image' },
+          { key: 'lab_name', label: 'Nomi' },
+          { key: 'phone', label: 'Telefon' },
+          { key: 'region', label: 'Viloyat' },
+          { key: 'district', label: 'Tuman' },
+          { key: 'experience_years', label: 'Tajriba (yil)' },
+          { key: 'rating', label: 'Reyting' },
+          { key: 'orders_count', label: 'Buyurtmalar' },
+          { key: 'status', label: 'Holat', type: 'bool' },
+          { key: 'created_at', label: 'Yaratilgan', type: 'date' },
+        ],
+      },
+      {
+        label: 'Barcha laboratoriyalar',
+        endpoint: '/api/v1/super-admin/laboratory-staff/laboratories/',
+        columns: [
+          { key: 'id', label: 'ID' },
+          { key: 'logo', label: 'Logo', type: 'image' },
+          { key: 'lab_name', label: 'Nomi' },
+          { key: 'phone', label: 'Telefon' },
+          { key: 'region', label: 'Viloyat' },
+          { key: 'district', label: 'Tuman' },
+          { key: 'experience_years', label: 'Tajriba (yil)' },
+          { key: 'rating', label: 'Reyting' },
+          { key: 'orders_count', label: 'Buyurtmalar' },
+          { key: 'status', label: 'Holat', type: 'bool' },
           { key: 'created_at', label: 'Yaratilgan', type: 'date' },
         ],
       },
@@ -306,11 +342,15 @@ export const sections = [
         endpoint: '/api/v1/super-admin/address/list/',
         columns: [
           { key: 'id', label: 'ID' },
+          { key: 'patient_data', label: 'Bemor' },
           { key: 'address_type', label: 'Turi', type: 'badge' },
           { key: 'region', label: 'Viloyat' },
           { key: 'district', label: 'Tuman' },
           { key: 'street', label: "Ko'cha" },
           { key: 'home', label: 'Uy' },
+          { key: 'building_number', label: 'Bino' },
+          { key: 'entrance', label: 'Kirish' },
+          { key: 'floor', label: 'Qavat' },
           { key: 'status', label: 'Holat', type: 'badge' },
           { key: 'created_at', label: 'Yaratilgan', type: 'date' },
         ],
@@ -339,6 +379,8 @@ export const detailMap = {
   '/api/v1/super-admin/home/social-network/': '/api/v1/super-admin/home/social-network/{id}/',
   '/api/v1/super-admin/home/share-app/': '/api/v1/super-admin/home/share-app/{id}/',
   '/api/v1/super-admin/laboratory/order/list/': '/api/v1/super-admin/laboratory/order/detail/{id}/',
+  '/api/v1/super-admin/laboratory-staff/list/': '/api/v1/super-admin/laboratory-staff/detail/{id}/',
+  '/api/v1/super-admin/laboratory-staff/laboratories/': '/api/v1/super-admin/laboratory-staff/detail/{id}/',
   '/api/v1/super-admin/medical-service/list/': '/api/v1/super-admin/medical-service/detail/{id}/',
   '/api/v1/super-admin/notif/list/': '/api/v1/super-admin/notif/detail/{id}/',
   '/api/v1/super-admin/notif/device/list/': '/api/v1/super-admin/notif/device/detail/{id}/',
@@ -351,7 +393,7 @@ export const detailMap = {
 
 // DELETE manzili. Ko'p bo'limlarda DELETE standart detail/{id}/ da,
 // 5 ta bo'limda maxsus /delete/ suffiksi bilan. DELETE yo'q resurslar
-// (orders, laboratory/order) — bu yerda yo'q, shuning uchun tugma chiqmaydi.
+// (orders, laboratory/order, laboratory-staff) — bu yerda yo'q, shuning uchun tugma chiqmaydi.
 const deleteMap = {
   '/api/v1/super-admin/users/list/': '/api/v1/super-admin/users/detail/{id}/delete/',
   '/api/v1/super-admin/doctor-application/list/': '/api/v1/super-admin/doctor-application/detail/{id}/delete/',
@@ -375,6 +417,33 @@ const deleteMap = {
 // Berilgan list endpoint uchun DELETE manzili shabloni (yo'q bo'lsa null — tugma chiqmaydi)
 export function getDeleteTemplate(listEndpoint) {
   return deleteMap[listEndpoint] || null
+}
+
+// Bloklash/blokdan chiqarish — CustomUser.id (obj.user.id) bilan ishlaydi,
+// bu profil o'zining id'sidan (PatientProfile/DoctorProfile) FARQLI.
+const blockMap = {
+  '/api/v1/super-admin/profile/doctor-profiles/': '/api/v1/super-admin/users/{user_id}/block/',
+  '/api/v1/super-admin/profile/patient-profiles/': '/api/v1/super-admin/users/{user_id}/block/',
+}
+
+export function getBlockTemplate(listEndpoint) {
+  return blockMap[listEndpoint] || null
+}
+
+// Bemor/shifokorning buyurtmalar tarixi — profilning O'ZINING id'si bilan (route :id).
+const orderHistoryMap = {
+  '/api/v1/super-admin/profile/patient-profiles/': {
+    label: 'Buyurtmalar tarixi',
+    template: '/api/v1/super-admin/orders/patient/{id}/history/',
+  },
+  '/api/v1/super-admin/profile/doctor-profiles/': {
+    label: 'Chaqiruvlar tarixi',
+    template: '/api/v1/super-admin/orders/doctor/{id}/history/',
+  },
+}
+
+export function getOrderHistoryConfig(listEndpoint) {
+  return orderHistoryMap[listEndpoint] || null
 }
 
 export function findSection(key) {

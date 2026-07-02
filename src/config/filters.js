@@ -499,6 +499,13 @@ export const filters = {
       "before": "created_at_before"
     }
   ],
+  "/api/v1/super-admin/laboratory-staff/list/": [
+    {
+      "key": "search",
+      "label": "Qidiruv",
+      "type": "text"
+    }
+  ],
   "/api/v1/super-admin/address/list/": [
     {
       "key": "address_type",

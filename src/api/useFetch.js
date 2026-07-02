@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import client from './client'
+import defaultClient from './client'
 
 // Xato xabarini backend formatidan ajratib oladi.
 // HTML javob (server 404/500 sahifasi) bo'lsa — xom HTML'ni KO'RSATMAYMIZ.
@@ -23,7 +23,7 @@ function extractError(e) {
 
 // Berilgan endpointdan GET qiladi. Eski/keraksiz javoblarni e'tiborsiz qoldiradi
 // (race condition) va komponent yopilgach setState chaqirmaydi.
-export default function useFetch(endpoint, params) {
+export default function useFetch(endpoint, params, client = defaultClient) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -62,7 +62,7 @@ export default function useFetch(endpoint, params) {
       ignore = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [endpoint, paramKey, tick])
+  }, [endpoint, paramKey, tick, client])
 
   const reload = useCallback(() => setTick((t) => t + 1), [])
 

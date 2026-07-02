@@ -48,6 +48,22 @@ const customCreate = {
       { name: 'status', label: 'Holat', type: 'bool' },
     ],
   },
+  '/api/v1/super-admin/laboratory-staff/list/': {
+    url: '/api/v1/super-admin/laboratory-staff/create/',
+    fields: [
+      { name: 'lab_name', label: 'Laboratoriya nomi', type: 'text', required: true },
+      { name: 'full_name', label: 'Mas\'ul F.I.O', type: 'text', required: true },
+      { name: 'contact', label: 'Kontakt', type: 'text', required: true },
+      { name: 'password', label: 'Parol', type: 'text', required: true },
+      { name: 'region', label: 'Viloyat', type: 'text', required: true },
+      { name: 'district', label: 'Tuman', type: 'text' },
+      { name: 'address', label: 'Manzil', type: 'text' },
+      { name: 'phone', label: 'Telefon', type: 'text' },
+      { type: 'latlng', latName: 'latitude', lngName: 'longitude', label: 'Joylashuv (xaritadan tanlang)' },
+      { name: 'experience_years', label: 'Tajriba (yil)', type: 'number' },
+      { name: 'bio', label: 'Bio', type: 'textarea' },
+    ],
+  },
 }
 
 // Create (POST) yo'q bo'lgan bo'limlar (backend list endpoint'ida POST yo'q)
